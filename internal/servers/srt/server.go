@@ -76,19 +76,21 @@ type serverParent interface {
 
 // Server is a SRT server.
 type Server struct {
-	Address             string
-	RTSPAddress         string
-	ReadTimeout         conf.Duration
-	WriteTimeout        conf.Duration
-	UDPMaxPayloadSize   int
-	UDPReadBufferSize   uint
-	RunOnConnect        string
-	RunOnConnectRestart bool
-	RunOnDisconnect     string
-	ExternalCmdPool     *externalcmd.Pool
-	Metrics             serverMetrics
-	PathManager         serverPathManager
-	Parent              serverParent
+	Address                   string
+	RTSPAddress               string
+	ReadTimeout               conf.Duration
+	WriteTimeout              conf.Duration
+	UDPMaxPayloadSize         int
+	UDPReadBufferSize         uint
+	RunOnConnect              string
+	RunOnConnectRestart       bool
+	RunOnDisconnect           string
+	PublisherClaimHTTPAddress string
+	PublisherClaimTimeout     conf.Duration
+	ExternalCmdPool           *externalcmd.Pool
+	Metrics                   serverMetrics
+	PathManager               serverPathManager
+	Parent                    serverParent
 
 	ctx       context.Context
 	ctxCancel func()
@@ -185,19 +187,21 @@ outer:
 
 		case req := <-s.chNewConnRequest:
 			c := &conn{
-				parentCtx:           s.ctx,
-				rtspAddress:         s.RTSPAddress,
-				readTimeout:         s.ReadTimeout,
-				writeTimeout:        s.WriteTimeout,
-				udpMaxPayloadSize:   s.UDPMaxPayloadSize,
-				connReq:             req,
-				runOnConnect:        s.RunOnConnect,
-				runOnConnectRestart: s.RunOnConnectRestart,
-				runOnDisconnect:     s.RunOnDisconnect,
-				wg:                  &s.wg,
-				externalCmdPool:     s.ExternalCmdPool,
-				pathManager:         s.PathManager,
-				parent:              s,
+				parentCtx:                 s.ctx,
+				rtspAddress:               s.RTSPAddress,
+				readTimeout:               s.ReadTimeout,
+				writeTimeout:              s.WriteTimeout,
+				udpMaxPayloadSize:         s.UDPMaxPayloadSize,
+				connReq:                   req,
+				runOnConnect:              s.RunOnConnect,
+				runOnConnectRestart:       s.RunOnConnectRestart,
+				runOnDisconnect:           s.RunOnDisconnect,
+				publisherClaimHTTPAddress: s.PublisherClaimHTTPAddress,
+				publisherClaimTimeout:     s.PublisherClaimTimeout,
+				wg:                        &s.wg,
+				externalCmdPool:           s.ExternalCmdPool,
+				pathManager:               s.PathManager,
+				parent:                    s,
 			}
 			c.initialize()
 			s.conns[c] = struct{}{}

@@ -873,19 +873,21 @@ func (p *Core) createResources(initial bool) error {
 	if currentConf.SRT &&
 		p.srtServer == nil {
 		i := &srt.Server{
-			Address:             currentConf.SRTAddress,
-			RTSPAddress:         currentConf.RTSPAddress,
-			ReadTimeout:         currentConf.ReadTimeout,
-			WriteTimeout:        currentConf.WriteTimeout,
-			UDPMaxPayloadSize:   currentConf.UDPMaxPayloadSize,
-			UDPReadBufferSize:   currentConf.UDPReadBufferSize,
-			RunOnConnect:        currentConf.RunOnConnect,
-			RunOnConnectRestart: currentConf.RunOnConnectRestart,
-			RunOnDisconnect:     currentConf.RunOnDisconnect,
-			ExternalCmdPool:     p.externalCmdPool,
-			Metrics:             p.metrics,
-			PathManager:         p.pathManager,
-			Parent:              p,
+			Address:                   currentConf.SRTAddress,
+			RTSPAddress:               currentConf.RTSPAddress,
+			ReadTimeout:               currentConf.ReadTimeout,
+			WriteTimeout:              currentConf.WriteTimeout,
+			UDPMaxPayloadSize:         currentConf.UDPMaxPayloadSize,
+			UDPReadBufferSize:         currentConf.UDPReadBufferSize,
+			RunOnConnect:              currentConf.RunOnConnect,
+			RunOnConnectRestart:       currentConf.RunOnConnectRestart,
+			RunOnDisconnect:           currentConf.RunOnDisconnect,
+			PublisherClaimHTTPAddress: currentConf.PublisherClaimHTTPAddress,
+			PublisherClaimTimeout:     currentConf.PublisherClaimTimeout,
+			ExternalCmdPool:           p.externalCmdPool,
+			Metrics:                   p.metrics,
+			PathManager:               p.pathManager,
+			Parent:                    p,
 		}
 		err = i.Initialize()
 		if err != nil {

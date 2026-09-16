@@ -260,6 +260,8 @@ type Conf struct {
 	AuthMethod                AuthMethod                   `json:"authMethod"`
 	AuthInternalUsers         []AuthInternalUser           `json:"authInternalUsers"`
 	AuthHTTPAddress           string                       `json:"authHTTPAddress"`
+	PublisherClaimHTTPAddress string                       `json:"publisherClaimHTTPAddress"`
+	PublisherClaimTimeout     Duration                     `json:"publisherClaimTimeout"`
 	ExternalAuthenticationURL *string                      `json:"externalAuthenticationURL,omitempty" deprecated:"true"`
 	AuthHTTPFingerprint       string                       `json:"authHTTPFingerprint"`
 	AuthHTTPExclude           []AuthInternalUserPermission `json:"authHTTPExclude"`

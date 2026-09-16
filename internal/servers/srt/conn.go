@@ -42,19 +42,21 @@ func srtCheckPassphrase(connReq srt.ConnRequest, passphrase string) error {
 }
 
 type conn struct {
-	parentCtx           context.Context
-	rtspAddress         string
-	readTimeout         conf.Duration
-	writeTimeout        conf.Duration
-	udpMaxPayloadSize   int
-	connReq             srt.ConnRequest
-	runOnConnect        string
-	runOnConnectRestart bool
-	runOnDisconnect     string
-	wg                  *sync.WaitGroup
-	externalCmdPool     *externalcmd.Pool
-	pathManager         serverPathManager
-	parent              *Server
+	parentCtx                 context.Context
+	rtspAddress               string
+	readTimeout               conf.Duration
+	writeTimeout              conf.Duration
+	udpMaxPayloadSize         int
+	connReq                   srt.ConnRequest
+	runOnConnect              string
+	runOnConnectRestart       bool
+	runOnDisconnect           string
+	publisherClaimHTTPAddress string
+	publisherClaimTimeout     conf.Duration
+	wg                        *sync.WaitGroup
+	externalCmdPool           *externalcmd.Pool
+	pathManager               serverPathManager
+	parent                    *Server
 
 	ctx       context.Context
 	ctxCancel func()
@@ -224,6 +226,24 @@ func (c *conn) runPublishReader(sconn srt.Conn, streamID *streamID, pathConf *co
 	if err != nil {
 		return err
 	}
+
+	// Fleet-wide exclusivity. Asked here, on the per-connection goroutine, and
+	// deliberately NOT in the /auth callback: /auth runs inline on the path
+	// manager's single goroutine, and it fires before Accept() and unboundedly
+	// before this point, so a claim taken there would be held by connections
+	// that never become a source.
+	releaseClaim, err := claimPublisher(
+		c.ctx,
+		c.publisherClaimHTTPAddress,
+		c.publisherClaimTimeout,
+		streamID.path,
+		streamID.query,
+		c.uuid.String(),
+	)
+	if err != nil {
+		return err
+	}
+	defer releaseClaim()
 
 	res, err := c.pathManager.AddPublisher(defs.PathAddPublisherReq{
 		Author:        c,
