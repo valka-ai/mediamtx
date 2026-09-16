@@ -37,10 +37,6 @@ func claimPublisher(
 	query string,
 	connID string,
 ) (func(), error) {
-	if address == "" {
-		return func() {}, nil
-	}
-
 	post := func(ctx context.Context, action string) error {
 		body, err := json.Marshal(&claimRequest{
 			Action: action,
@@ -54,13 +50,22 @@ func claimPublisher(
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, address, bytes.NewReader(body))
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid publisher claim request")
 		}
 		req.Header.Set("Content-Type", "application/json")
 
-		res, err := (&http.Client{Timeout: time.Duration(timeout)}).Do(req)
+		res, err := (&http.Client{
+			Timeout: time.Duration(timeout),
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}).Do(req)
 		if err != nil {
-			return err
+			// Transport errors can include the endpoint URL. Keep it out of logs.
+			if ctx.Err() != nil {
+				return fmt.Errorf("publisher claim request failed: %w", ctx.Err())
+			}
+			return fmt.Errorf("publisher claim request failed")
 		}
 		defer res.Body.Close()
 

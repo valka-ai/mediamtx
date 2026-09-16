@@ -1195,6 +1195,8 @@ func (p *Core) closeResources(newConf *conf.Conf) {
 	closeSRTServer := newConf == nil ||
 		newConf.SRT != currentConf.SRT ||
 		newConf.SRTAddress != currentConf.SRTAddress ||
+		newConf.PublisherClaimHTTPAddress != currentConf.PublisherClaimHTTPAddress ||
+		newConf.PublisherClaimTimeout != currentConf.PublisherClaimTimeout ||
 		newConf.RTSPAddress != currentConf.RTSPAddress ||
 		newConf.ReadTimeout != currentConf.ReadTimeout ||
 		newConf.WriteTimeout != currentConf.WriteTimeout ||

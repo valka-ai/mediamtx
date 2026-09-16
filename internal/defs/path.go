@@ -35,6 +35,8 @@ type PathFindPathConfRes struct {
 	Conf *conf.Path
 	User string
 	Err  error
+	// ConfigGeneration identifies this effective configuration within the process.
+	ConfigGeneration uint64
 }
 
 // PathFindPathConfReq contains arguments of FindPathConf().
@@ -76,6 +78,9 @@ type PathAddPublisherReq struct {
 	ConfToCompare *conf.Path
 	AccessRequest PathAccessRequest
 	Res           chan PathAddPublisherRes
+	// ExpectedConfigGeneration is captured by FindPathConf. Zero means no
+	// expectation, for publishers authenticated directly by AddPublisher.
+	ExpectedConfigGeneration uint64
 }
 
 // PathRemovePublisherReq contains arguments of RemovePublisher().

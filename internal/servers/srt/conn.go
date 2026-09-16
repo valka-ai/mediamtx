@@ -180,7 +180,7 @@ func (c *conn) runPublish(streamID *streamID) error {
 
 	readerErr := make(chan error)
 	go func() {
-		readerErr <- c.runPublishReader(sconn, streamID, res.Conf)
+		readerErr <- c.runPublishReader(sconn, streamID, res.Conf, res.ConfigGeneration)
 	}()
 
 	select {
@@ -195,7 +195,12 @@ func (c *conn) runPublish(streamID *streamID) error {
 	}
 }
 
-func (c *conn) runPublishReader(sconn srt.Conn, streamID *streamID, pathConf *conf.Path) error {
+func (c *conn) runPublishReader(
+	sconn srt.Conn,
+	streamID *streamID,
+	pathConf *conf.Path,
+	configGeneration uint64,
+) error {
 	sconn.SetReadDeadline(time.Now().Add(time.Duration(c.readTimeout)))
 	r := &mpegts.EnhancedReader{R: sconn}
 	err := r.Initialize()
@@ -246,11 +251,12 @@ func (c *conn) runPublishReader(sconn srt.Conn, streamID *streamID, pathConf *co
 	defer releaseClaim()
 
 	res, err := c.pathManager.AddPublisher(defs.PathAddPublisherReq{
-		Author:        c,
-		Desc:          &description.Session{Medias: medias},
-		UseRTPPackets: false,
-		ReplaceNTP:    true,
-		ConfToCompare: pathConf,
+		Author:                   c,
+		Desc:                     &description.Session{Medias: medias},
+		UseRTPPackets:            false,
+		ReplaceNTP:               true,
+		ConfToCompare:            pathConf,
+		ExpectedConfigGeneration: configGeneration,
 		AccessRequest: defs.PathAccessRequest{
 			Name:     streamID.path,
 			Query:    streamID.query,

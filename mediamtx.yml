@@ -98,6 +98,30 @@ authInternalUsers:
 # If the response code is 20x, the action is allowed, otherwise
 # it is forbidden.
 authHTTPAddress:
+
+###############################################
+# Global settings -> Fleet-wide publisher claim
+#
+# THIS IS A FORK. Stock MediaMTX has neither of these settings.
+#
+# Before an SRT connection becomes a path's confirmed source, this instance asks
+# the authority at publisherClaimHTTPAddress whether it may. That is what lets
+# several interchangeable instances sit behind one load balancer with at most one
+# of them publishing a given stream_id. See docs/DESIGN-HA-CLAIM.md in
+# valka-ai/ingest-management.
+#
+# It is REQUIRED whenever srt is enabled, and srt is enabled by default. An empty
+# address is a fatal configuration error rather than a bypass: the claim is the
+# only cluster-wide exclusivity mechanism there is, so an instance that cannot
+# ask is an instance that must not serve. A non-2xx answer, a transport error and
+# a timeout all deny.
+#
+# The authority is called from the per-connection goroutine, never from the
+# path manager's, so a slow one cannot stall admission for other paths. It must
+# be loopback: it is asked on the publish path, and the answer gates media.
+publisherClaimHTTPAddress: http://127.0.0.1:9102/claim
+# Timeout of every claim and release request.
+publisherClaimTimeout: 2s
 # If the HTTP authentication URL has a self-signed or invalid certificate,
 # you can provide the fingerprint of the certificate in order to
 # validate it anyway. It can be obtained by running:

@@ -56,6 +56,7 @@ type session struct {
 	uuid                        uuid.UUID
 	created                     time.Time
 	pathConf                    *conf.Path // record only
+	pathConfGeneration          uint64     // record only
 	path                        defs.Path
 	stream                      *stream.Stream
 	rtspStream                  *gortsplib.ServerStream
@@ -211,6 +212,7 @@ func (s *session) onAnnounce(c *conn, ctx *gortsplib.ServerHandlerOnAnnounceCtx)
 	}
 
 	s.pathConf = res.Conf
+	s.pathConfGeneration = res.ConfigGeneration
 
 	s.mutex.Lock()
 	s.user = res.User
@@ -365,11 +367,12 @@ func (s *session) onRecord(_ *gortsplib.ServerHandlerOnRecordCtx) (*base.Respons
 
 			onTracks := func(desc *description.Session) (*stream.SubStream, error) {
 				res, err := s.pathManager.AddPublisher(defs.PathAddPublisherReq{
-					Author:        s,
-					Desc:          desc,
-					UseRTPPackets: false,
-					ReplaceNTP:    true,
-					ConfToCompare: s.pathConf,
+					Author:                   s,
+					Desc:                     desc,
+					UseRTPPackets:            false,
+					ReplaceNTP:               true,
+					ConfToCompare:            s.pathConf,
+					ExpectedConfigGeneration: s.pathConfGeneration,
 					AccessRequest: defs.PathAccessRequest{
 						Name:     s.rsession.Path()[1:],
 						Query:    s.rsession.Query(),
@@ -412,11 +415,12 @@ func (s *session) onRecord(_ *gortsplib.ServerHandlerOnRecordCtx) (*base.Respons
 	}
 
 	res, err := s.pathManager.AddPublisher(defs.PathAddPublisherReq{
-		Author:        s,
-		Desc:          s.rsession.AnnouncedDescription(),
-		UseRTPPackets: true,
-		ReplaceNTP:    !s.pathConf.UseAbsoluteTimestamp,
-		ConfToCompare: s.pathConf,
+		Author:                   s,
+		Desc:                     s.rsession.AnnouncedDescription(),
+		UseRTPPackets:            true,
+		ReplaceNTP:               !s.pathConf.UseAbsoluteTimestamp,
+		ConfToCompare:            s.pathConf,
+		ExpectedConfigGeneration: s.pathConfGeneration,
 		AccessRequest: defs.PathAccessRequest{
 			Name:      s.rsession.Path()[1:],
 			Query:     s.rsession.Query(),

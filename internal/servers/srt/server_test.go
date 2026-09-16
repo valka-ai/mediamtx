@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"syscall"
 	"testing"
@@ -105,6 +107,11 @@ func TestAuthError(t *testing.T) {
 }
 
 func TestServerPublish(t *testing.T) {
+	claimServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer claimServer.Close()
+
 	externalCmdPool := &externalcmd.Pool{}
 	externalCmdPool.Initialize()
 	defer externalCmdPool.Close()
@@ -124,12 +131,17 @@ func TestServerPublish(t *testing.T) {
 			require.Equal(t, "param=value", req.AccessRequest.Query)
 			require.Equal(t, "myuser", req.AccessRequest.Credentials.User)
 			require.Equal(t, "mypass", req.AccessRequest.Credentials.Pass)
-			return &defs.PathFindPathConfRes{Conf: &conf.Path{}, User: req.AccessRequest.Credentials.User}, nil
+			return &defs.PathFindPathConfRes{
+				ConfigGeneration: 42,
+				Conf:             &conf.Path{},
+				User:             req.AccessRequest.Credentials.User,
+			}, nil
 		},
 		AddPublisherImpl: func(req defs.PathAddPublisherReq) (*defs.PathAddPublisherRes, error) {
 			require.Equal(t, "teststream", req.AccessRequest.Name)
 			require.Equal(t, "param=value", req.AccessRequest.Query)
 			require.True(t, req.AccessRequest.SkipAuth)
+			require.Equal(t, uint64(42), req.ExpectedConfigGeneration)
 
 			strm = &stream.Stream{
 				OrigDesc:          req.Desc,
@@ -184,17 +196,19 @@ func TestServerPublish(t *testing.T) {
 	}
 
 	s := &Server{
-		Address:             "127.0.0.1:8890",
-		RTSPAddress:         "",
-		ReadTimeout:         conf.Duration(10 * time.Second),
-		WriteTimeout:        conf.Duration(10 * time.Second),
-		UDPMaxPayloadSize:   1472,
-		RunOnConnect:        "",
-		RunOnConnectRestart: false,
-		RunOnDisconnect:     "string",
-		ExternalCmdPool:     externalCmdPool,
-		PathManager:         pathManager,
-		Parent:              test.NilLogger,
+		Address:                   "127.0.0.1:8890",
+		RTSPAddress:               "",
+		ReadTimeout:               conf.Duration(10 * time.Second),
+		WriteTimeout:              conf.Duration(10 * time.Second),
+		UDPMaxPayloadSize:         1472,
+		RunOnConnect:              "",
+		RunOnConnectRestart:       false,
+		RunOnDisconnect:           "string",
+		PublisherClaimHTTPAddress: claimServer.URL,
+		PublisherClaimTimeout:     conf.Duration(time.Second),
+		ExternalCmdPool:           externalCmdPool,
+		PathManager:               pathManager,
+		Parent:                    test.NilLogger,
 	}
 	err := s.Initialize()
 	require.NoError(t, err)

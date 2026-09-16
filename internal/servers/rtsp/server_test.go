@@ -100,12 +100,17 @@ func TestServerPublish(t *testing.T) {
 								require.True(t, ok)
 							}
 
-							return &defs.PathFindPathConfRes{Conf: &conf.Path{}, User: req.AccessRequest.Credentials.User}, nil
+							return &defs.PathFindPathConfRes{
+								ConfigGeneration: 42,
+								Conf:             &conf.Path{},
+								User:             req.AccessRequest.Credentials.User,
+							}, nil
 						},
 						AddPublisherImpl: func(req defs.PathAddPublisherReq) (*defs.PathAddPublisherRes, error) {
 							require.Equal(t, "teststream", req.AccessRequest.Name)
 							require.Equal(t, "param=value", req.AccessRequest.Query)
 							require.True(t, req.AccessRequest.SkipAuth)
+							require.Equal(t, uint64(42), req.ExpectedConfigGeneration)
 
 							strm = &stream.Stream{
 								OrigDesc:          req.Desc,
@@ -286,7 +291,7 @@ func TestServerPublishMPEGTS(t *testing.T) {
 		FindPathConfImpl: func(req defs.PathFindPathConfReq) (*defs.PathFindPathConfRes, error) {
 			require.Equal(t, "teststream", req.AccessRequest.Name)
 			require.Equal(t, "param=value", req.AccessRequest.Query)
-			return &defs.PathFindPathConfRes{Conf: pathConf}, nil
+			return &defs.PathFindPathConfRes{Conf: pathConf, ConfigGeneration: 43}, nil
 		},
 		AddPublisherImpl: func(req defs.PathAddPublisherReq) (*defs.PathAddPublisherRes, error) {
 			require.Equal(t, "teststream", req.AccessRequest.Name)
@@ -295,6 +300,7 @@ func TestServerPublishMPEGTS(t *testing.T) {
 			require.False(t, req.UseRTPPackets)
 			require.True(t, req.ReplaceNTP)
 			require.Same(t, pathConf, req.ConfToCompare)
+			require.Equal(t, uint64(43), req.ExpectedConfigGeneration)
 			require.Equal(t, &description.Session{Medias: []*description.Media{{
 				Type: description.MediaTypeVideo,
 				Formats: []format.Format{&format.H264{

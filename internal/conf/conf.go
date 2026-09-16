@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"reflect"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -442,6 +444,7 @@ func (conf *Conf) setDefaults() {
 	conf.AuthMethod = AuthMethodInternal
 	conf.AuthInternalUsers = defaultAuthInternalUsers
 	conf.AuthJWTClaimKey = "mediamtx_permissions"
+	conf.PublisherClaimTimeout = 2 * Duration(time.Second)
 
 	// Control API
 	conf.APIAddress = ":9997"
@@ -738,6 +741,44 @@ func (conf *Conf) Validate(l logger.Writer) error {
 		if conf.AuthJWTClaimKey == "" {
 			return fmt.Errorf("'authJWTClaimKey' is empty")
 		}
+	}
+
+	if conf.SRT && conf.PublisherClaimHTTPAddress == "" {
+		return fmt.Errorf("'publisherClaimHTTPAddress' must be set when srt is enabled")
+	}
+
+	if conf.PublisherClaimHTTPAddress != "" {
+		u, err := url.Parse(conf.PublisherClaimHTTPAddress)
+		if err != nil || u.Scheme != "http" {
+			return fmt.Errorf("'publisherClaimHTTPAddress' must be an http URL")
+		}
+
+		switch strings.ToLower(u.Hostname()) {
+		case "127.0.0.1", "::1", "localhost":
+		default:
+			return fmt.Errorf("'publisherClaimHTTPAddress' must have a loopback host")
+		}
+
+		_, port, err := net.SplitHostPort(u.Host)
+		if err != nil {
+			return fmt.Errorf("'publisherClaimHTTPAddress' must have a valid port")
+		}
+		portNumber, err := strconv.ParseUint(port, 10, 16)
+		if err != nil || portNumber == 0 {
+			return fmt.Errorf("'publisherClaimHTTPAddress' must have a valid port")
+		}
+
+		// strings.Contains rather than u.Fragment: a literal '#' in a URL is
+		// always a fragment delimiter (one in a path must be percent-encoded),
+		// and url.Parse cannot tell ".../claim#" from ".../claim" -- both give
+		// an empty Fragment.
+		if u.User != nil || strings.Contains(conf.PublisherClaimHTTPAddress, "#") {
+			return fmt.Errorf("'publisherClaimHTTPAddress' must not contain userinfo or a fragment")
+		}
+	}
+
+	if conf.PublisherClaimTimeout <= 0 {
+		return fmt.Errorf("'publisherClaimTimeout' must be greater than zero")
 	}
 
 	if conf.AuthJWTInHTTPQuery != nil {

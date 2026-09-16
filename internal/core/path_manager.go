@@ -96,6 +96,11 @@ type pathManager struct {
 	hlsServer *hls.Server
 	paths     map[string]*path
 
+	// Generations belong to effective configurations, including regexp configs,
+	// not live paths. Deleting a config must not rewind the assignment counter.
+	pathConfGenerations    map[string]uint64
+	lastPathConfGeneration uint64
+
 	// in
 	chReloadConf          chan map[string]*conf.Path
 	chSetHLSServer        chan pathSetHLSServerReq
@@ -120,6 +125,7 @@ func (pm *pathManager) initialize() {
 	pm.ctx = ctx
 	pm.ctxCancel = ctxCancel
 	pm.paths = make(map[string]*path)
+	pm.pathConfGenerations = make(map[string]uint64, len(pm.pathConfs))
 	pm.chReloadConf = make(chan map[string]*conf.Path)
 	pm.chSetHLSServer = make(chan pathSetHLSServerReq)
 	pm.chRemovePath = make(chan *path)
@@ -137,6 +143,8 @@ func (pm *pathManager) initialize() {
 	pm.chAPIStaticSourcesGet = make(chan pathAPIStaticSourcesGetReq)
 
 	for _, pathConf := range pm.pathConfs {
+		pm.lastPathConfGeneration++
+		pm.pathConfGenerations[pathConf.Name] = pm.lastPathConfGeneration
 		if pathConf.Regexp == nil {
 			pm.createPath(pathConf, pathConf.Name, nil)
 		}
@@ -239,12 +247,23 @@ func (pm *pathManager) doReloadConf(newPaths map[string]*conf.Path) {
 	for confName, pathConf := range pm.pathConfs {
 		if newPath, ok := newPaths[confName]; ok {
 			if !newPath.Equal(pathConf) {
+				pm.lastPathConfGeneration++
+				pm.pathConfGenerations[confName] = pm.lastPathConfGeneration
 				if pathConfCanBeUpdated(pathConf, newPath) {
 					confsToReload[confName] = struct{}{}
 				} else {
 					confsToRecreate[confName] = struct{}{}
 				}
 			}
+		} else {
+			delete(pm.pathConfGenerations, confName)
+		}
+	}
+
+	for confName := range newPaths {
+		if _, ok := pm.pathConfs[confName]; !ok {
+			pm.lastPathConfGeneration++
+			pm.pathConfGenerations[confName] = pm.lastPathConfGeneration
 		}
 	}
 
@@ -354,8 +373,9 @@ func (pm *pathManager) doFindPathConf(req defs.PathFindPathConfReq) {
 	}
 
 	req.Res <- defs.PathFindPathConfRes{
-		Conf: pathConf,
-		User: user,
+		Conf:             pathConf,
+		ConfigGeneration: pm.pathConfGenerations[pathConf.Name],
+		User:             user,
 	}
 }
 
@@ -426,7 +446,9 @@ func (pm *pathManager) doAddPublisher(req defs.PathAddPublisherReq) {
 		return
 	}
 
-	if req.ConfToCompare != nil && !pathConf.Equal(req.ConfToCompare) {
+	if (req.ConfToCompare != nil && !pathConf.Equal(req.ConfToCompare)) ||
+		(req.ExpectedConfigGeneration != 0 &&
+			pm.pathConfGenerations[pathConf.Name] != req.ExpectedConfigGeneration) {
 		req.Res <- defs.PathAddPublisherRes{Err: fmt.Errorf("configuration has changed")}
 		return
 	}

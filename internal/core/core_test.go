@@ -1,6 +1,8 @@
 package core
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +15,19 @@ import (
 	"github.com/bluenviron/mediamtx/internal/test"
 )
 
+func setupPublisherClaim(t *testing.T) {
+	t.Helper()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", server.URL)
+}
+
 func newInstance(t *testing.T, conf string, args ...string) (*Core, bool) {
+	setupPublisherClaim(t)
+
 	if conf == "" {
 		return New(args)
 	}
@@ -94,6 +108,8 @@ func TestCoreErrors(t *testing.T) {
 }
 
 func TestCoreHotReloading(t *testing.T) {
+	setupPublisherClaim(t)
+
 	confPath := filepath.Join(t.TempDir(), "rtsp-conf")
 
 	err := os.WriteFile(confPath, []byte("paths:\n"+
@@ -131,6 +147,8 @@ func TestCoreHotReloading(t *testing.T) {
 }
 
 func TestCoreHotReloadingAndLoggerError(t *testing.T) {
+	setupPublisherClaim(t)
+
 	confPath := filepath.Join(t.TempDir(), "rtsp-conf")
 
 	err := os.WriteFile(confPath, []byte(""),
@@ -155,6 +173,8 @@ func TestNewRejectsConflictingOneShotFlags(t *testing.T) {
 }
 
 func TestValidateConf(t *testing.T) {
+	setupPublisherClaim(t)
+
 	savedDefaultConfPaths := defaultConfPaths
 	savedDefaultConfPathsNotWin := defaultConfPathsNotWin
 	t.Cleanup(func() {

@@ -346,12 +346,17 @@ func TestServerPublish(t *testing.T) {
 			require.Equal(t, "param=value", req.AccessRequest.Query)
 			require.Equal(t, "myuser", req.AccessRequest.Credentials.User)
 			require.Equal(t, "mypass", req.AccessRequest.Credentials.Pass)
-			return &defs.PathFindPathConfRes{Conf: &conf.Path{}, User: req.AccessRequest.Credentials.User}, nil
+			return &defs.PathFindPathConfRes{
+				ConfigGeneration: 42,
+				Conf:             &conf.Path{},
+				User:             req.AccessRequest.Credentials.User,
+			}, nil
 		},
 		AddPublisherImpl: func(req defs.PathAddPublisherReq) (*defs.PathAddPublisherRes, error) {
 			require.Equal(t, "teststream", req.AccessRequest.Name)
 			require.Equal(t, "param=value", req.AccessRequest.Query)
 			require.True(t, req.AccessRequest.SkipAuth)
+			require.Equal(t, uint64(42), req.ExpectedConfigGeneration)
 
 			strm = &stream.Stream{
 				OrigDesc:          req.Desc,

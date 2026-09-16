@@ -27,6 +27,8 @@ func createTempFile(t *testing.T, byts []byte) string {
 }
 
 func TestConfFromFile(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	t.Run("explicit path config", func(t *testing.T) {
 		tmpf := createTempFile(t, []byte("logLevel: debug\n"+
 			"paths:\n"+
@@ -189,6 +191,8 @@ func TestConfFromFile(t *testing.T) {
 }
 
 func TestConfFromFileAndEnv(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	// global parameter
 	t.Setenv("RTSP_PROTOCOLS", "tcp")
 
@@ -220,6 +224,8 @@ func TestConfFromFileAndEnv(t *testing.T) {
 }
 
 func TestConfFromEnv(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	t.Run("path source", func(t *testing.T) {
 		t.Setenv("MTX_PATHS_CAM1_SOURCE", "rtsp://testing")
 
@@ -278,6 +284,8 @@ func TestConfFromEnv(t *testing.T) {
 }
 
 func TestConfEncryption(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	key := "testing123testin"
 	plaintext := "paths:\n" +
 		"  path1:\n" +
@@ -311,6 +319,8 @@ func TestConfEncryption(t *testing.T) {
 }
 
 func TestConfDeprecatedAuth(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	tmpf := createTempFile(t, []byte(
 		"paths:\n"+
 			"  cam:\n"+
@@ -369,6 +379,8 @@ func TestConfDeprecatedAuth(t *testing.T) {
 }
 
 func TestConfDeprecatedWebRTCICEServersIPv6(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	tmpf := createTempFile(t, []byte(
 		"webrtcICEServers:\n"+
 			"- \"turn:myuser:mypass:[2001:db8::1]:3478?transport=tcp\"\n"))
@@ -384,6 +396,8 @@ func TestConfDeprecatedWebRTCICEServersIPv6(t *testing.T) {
 }
 
 func TestConfErrors(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	for _, ca := range []struct {
 		name string
 		conf string
@@ -1048,6 +1062,8 @@ func TestConfErrors(t *testing.T) {
 }
 
 func TestDeprecatedAvailabilityHooks(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	tmpf := createTempFile(t, []byte("paths:\n"+
 		"  mypath:\n"+
 		"    runOnReady: command1\n"+
@@ -1067,6 +1083,8 @@ func TestDeprecatedAvailabilityHooks(t *testing.T) {
 }
 
 func TestAlwaysAvailableFileErrorMagicBytes(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	tmpf := createTempFile(t, []byte("ABCDEFGHI"))
 
 	tmpConf := createTempFile(t, []byte("paths:\n"+
@@ -1079,6 +1097,8 @@ func TestAlwaysAvailableFileErrorMagicBytes(t *testing.T) {
 }
 
 func TestDefaultConfFile(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	func() {
 		conf1, confPath1, err := Load("../../mediamtx.yml", nil, nil)
 		require.NoError(t, err)
@@ -1109,6 +1129,8 @@ func TestDefaultConfFile(t *testing.T) {
 }
 
 func TestClone(t *testing.T) {
+	t.Setenv("MTX_PUBLISHERCLAIMHTTPADDRESS", "http://127.0.0.1:9102/claim")
+
 	conf1, _, err := Load("", nil, nil)
 	require.NoError(t, err)
 

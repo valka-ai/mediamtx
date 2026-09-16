@@ -449,11 +449,12 @@ func (s *session) runPublish(req *initialRequestReq) (int, error) {
 	}
 
 	res2, err := s.pathManager.AddPublisher(defs.PathAddPublisherReq{
-		Author:        s,
-		Desc:          &description.Session{Medias: medias},
-		UseRTPPackets: true,
-		ReplaceNTP:    !res1.Conf.UseAbsoluteTimestamp,
-		ConfToCompare: res1.Conf,
+		Author:                   s,
+		Desc:                     &description.Session{Medias: medias},
+		UseRTPPackets:            true,
+		ReplaceNTP:               !res1.Conf.UseAbsoluteTimestamp,
+		ConfToCompare:            res1.Conf,
+		ExpectedConfigGeneration: res1.ConfigGeneration,
 		AccessRequest: defs.PathAccessRequest{
 			Name:      s.pathName,
 			Query:     s.httpRequest.URL.RawQuery,

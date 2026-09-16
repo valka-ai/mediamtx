@@ -294,11 +294,12 @@ func (c *conn) runPublish() error {
 	}
 
 	res2, err := c.pathManager.AddPublisher(defs.PathAddPublisherReq{
-		Author:        c,
-		Desc:          &description.Session{Medias: medias},
-		UseRTPPackets: false,
-		ReplaceNTP:    true,
-		ConfToCompare: res1.Conf,
+		Author:                   c,
+		Desc:                     &description.Session{Medias: medias},
+		UseRTPPackets:            false,
+		ReplaceNTP:               true,
+		ConfToCompare:            res1.Conf,
+		ExpectedConfigGeneration: res1.ConfigGeneration,
 		AccessRequest: defs.PathAccessRequest{
 			Name:     pathName,
 			Query:    c.rconn.URL.RawQuery,
