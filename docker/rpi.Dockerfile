@@ -6,7 +6,7 @@ ADD binaries/mediamtx_*_linux_armv7.tar.gz /linux/arm/v7
 ADD binaries/mediamtx_*_linux_arm64.tar.gz /linux/arm64
 
 #################################################################
-FROM --platform=linux/arm/v7 debian:trixie-slim AS base-arm-v7
+FROM --platform=linux/arm/v7 debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad AS base-arm-v7
 
 # even though the base image is armv7,
 # Raspbian libraries and compilers provide armv6 compatibility.
@@ -34,7 +34,7 @@ RUN apt update && apt install --reinstall -y \
     && rm -rf /var/lib/apt/lists/*
 
 #################################################################
-FROM --platform=linux/arm64 debian:trixie-slim AS base-arm64
+FROM --platform=linux/arm64 debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad AS base-arm64
 
 RUN apt update \
 	&& apt install -y wget gpg \
